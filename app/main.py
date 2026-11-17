@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 
-app = FastAPI(
-    title="Product Catalog Service"
-)
+from app.api.products import router as product_router
+
+app = FastAPI(title="Product Catalog Service")
+
+app.include_router(product_router)
 
 
 @app.get("/")
