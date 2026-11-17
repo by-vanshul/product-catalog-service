@@ -2,7 +2,7 @@ import uuid
 from typing import List
 from fastapi import APIRouter
 from fastapi import HTTPException
-from app.schemas.product import ProductCreate
+from app.schemas.product import ProductCreate, ProductUpdate
 
 
 router = APIRouter()
@@ -31,6 +31,44 @@ def get_product(product_id: str):
     for product in products:
         if product["id"] == product_id:
             return product
+
+    raise HTTPException(
+        status_code=404,
+        detail="Product not found"
+    )
+
+
+@router.put("/products/{product_id}")
+def update_product(product_id: str, updated_product: ProductUpdate):
+
+    for product in products:
+
+        if product["id"] == product_id:
+
+            update_data = updated_product.model_dump(
+                exclude_unset=True
+            )
+
+            product.update(update_data)
+
+            return product
+
+    raise HTTPException(
+        status_code=404,
+        detail="Product not found"
+    )
+
+
+@router.delete("/products/{product_id}")
+def delete_product(product_id: str):
+
+    for index, product in enumerate(products):
+
+        if product["id"] == product_id:
+
+            deleted_product = products.pop(index)
+
+            return deleted_product
 
     raise HTTPException(
         status_code=404,

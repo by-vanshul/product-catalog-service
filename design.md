@@ -106,6 +106,13 @@ DELETE /products/{id}
 | 404 | Product Not Found |
 | 500 | Internal Server Error |
 
+
+---
+
+### Design Decision
+
+Product updates support both full and partial updates. Clients may send the complete product payload or only the fields that need to be modified.
+
 ---
 
 ## Future Enhancements
