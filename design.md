@@ -111,7 +111,8 @@ DELETE /products/{id}
 
 ### Design Decision
 
-Product updates support both full and partial updates. Clients may send the complete product payload or only the fields that need to be modified.
+- Product updates support both full and partial updates. Clients may send the complete product payload or only the fields that need to be modified.
+- API responses may be standardized using a message + data structure.
 
 ---
 
