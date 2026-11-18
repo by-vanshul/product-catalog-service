@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.api.products import router as product_router
+import app.database.database
 import logging
 
 logging.basicConfig(
