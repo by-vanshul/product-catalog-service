@@ -113,6 +113,8 @@ DELETE /products/{id}
 
 - Product updates support both full and partial updates. Clients may send the complete product payload or only the fields that need to be modified.
 - API responses may be standardized using a message + data structure.
+- Implemented a service layer to keep business logic separate from API routes and database models.
+- The API layer handles HTTP concerns, while the service layer manages product operations and database interactions.
 
 ---
 

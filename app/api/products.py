@@ -33,11 +33,7 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
 
 
 @router.put("/products/{product_id}", response_model=ProductResponse)
-def update_product(
-    product_id: str,
-    updated_product: ProductUpdate,
-    db: Session = Depends(get_db),
-):
+def update_product(product_id: str, updated_product: ProductUpdate, db: Session = Depends(get_db),):
     product = product_service.update_product(db, product_id, updated_product)
     if product is None:
         raise HTTPException(
