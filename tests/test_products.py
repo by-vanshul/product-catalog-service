@@ -113,6 +113,69 @@ def test_get_products(client):
     assert any(product["id"] == created_product["id"] for product in products)
 
 
+def test_get_products_filters_by_name_case_insensitively(client):
+    matching_product = create_sample_product(client)
+    client.post(
+        "/products",
+        json={
+            "name": "Mechanical Keyboard",
+            "category": "Accessories",
+            "price": 59.99,
+            "quantity": 5,
+        },
+    )
+
+    response = client.get("/products", params={"name": "MOUSE"})
+
+    assert response.status_code == 200
+    assert [product["id"] for product in response.json()] == [
+        matching_product["id"]
+    ]
+
+
+def test_get_products_filters_by_category_case_insensitively(client):
+    matching_product = create_sample_product(client)
+    client.post(
+        "/products",
+        json={
+            "name": "Desk Lamp",
+            "category": "Lighting",
+            "price": 39.99,
+            "quantity": 3,
+        },
+    )
+
+    response = client.get("/products", params={"category": "ACCESS"})
+
+    assert response.status_code == 200
+    assert [product["id"] for product in response.json()] == [
+        matching_product["id"]
+    ]
+
+
+def test_get_products_combines_name_and_category_filters(client):
+    matching_product = create_sample_product(client)
+    client.post(
+        "/products",
+        json={
+            "name": "Wireless Mouse",
+            "category": "Office",
+            "price": 24.99,
+            "quantity": 4,
+        },
+    )
+
+    response = client.get(
+        "/products",
+        params={"name": "wireless", "category": "access"},
+    )
+
+    assert response.status_code == 200
+    assert [product["id"] for product in response.json()] == [
+        matching_product["id"]
+    ]
+
+
 def test_get_product_by_id(client):
     # Fetching an existing product by ID returns its details.
     created_product = create_sample_product(client)

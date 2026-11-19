@@ -39,9 +39,18 @@ def create_product(db: Session, product: ProductCreate) -> Product:
         ) from exc
 
 
-def get_products(db: Session) -> list[Product]:
+def get_products(
+    db: Session,
+    name: str | None = None,
+    category: str | None = None,
+) -> list[Product]:
     try:
-        products = db.query(Product).all()
+        query = db.query(Product)
+        if name is not None:
+            query = query.filter(Product.name.ilike(f"%{name}%"))
+        if category is not None:
+            query = query.filter(Product.category.ilike(f"%{category}%"))
+        products = query.all()
     except SQLAlchemyError as exc:
         db.rollback()
         logger.error("Failed to retrieve products: %s", exc)
