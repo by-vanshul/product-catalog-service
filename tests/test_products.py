@@ -72,6 +72,28 @@ def create_sample_product(client: TestClient) -> dict:
     return response.json()
 
 
+def create_products_for_listing(client: TestClient) -> list[dict]:
+    products = []
+    for name, price in (
+        ("Alpha", 40),
+        ("Bravo", 10),
+        ("Charlie", 30),
+        ("Delta", 20),
+    ):
+        response = client.post(
+            "/products",
+            json={
+                "name": name,
+                "category": "Electronics",
+                "price": price,
+                "quantity": 1,
+            },
+        )
+        assert response.status_code == 201
+        products.append(response.json())
+    return products
+
+
 def test_health(client):
     # The health endpoint responds successfully.
     response = client.get("/health")
@@ -174,6 +196,106 @@ def test_get_products_combines_name_and_category_filters(client):
     assert [product["id"] for product in response.json()] == [
         matching_product["id"]
     ]
+
+
+def test_get_products_paginates_results(client):
+    products = create_products_for_listing(client)
+
+    first_page = client.get(
+        "/products",
+        params={"page": 1, "size": 2},
+    )
+    second_page = client.get(
+        "/products",
+        params={"page": 2, "size": 2},
+    )
+
+    assert first_page.status_code == 200
+    assert second_page.status_code == 200
+    ordered_ids = sorted(product["id"] for product in products)
+    assert [product["id"] for product in first_page.json()] == ordered_ids[:2]
+    assert [product["id"] for product in second_page.json()] == ordered_ids[2:]
+
+
+@pytest.mark.parametrize(
+    ("sort_by", "order", "expected_names"),
+    [
+        ("name", "asc", ["Alpha", "Bravo", "Charlie", "Delta"]),
+        ("name", "desc", ["Delta", "Charlie", "Bravo", "Alpha"]),
+        ("price", "asc", ["Bravo", "Delta", "Charlie", "Alpha"]),
+        ("price", "desc", ["Alpha", "Charlie", "Delta", "Bravo"]),
+    ],
+)
+def test_get_products_sorts_results(client, sort_by, order, expected_names):
+    create_products_for_listing(client)
+
+    response = client.get(
+        "/products",
+        params={"sort_by": sort_by, "order": order},
+    )
+
+    assert response.status_code == 200
+    assert [product["name"] for product in response.json()] == expected_names
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"page": 0},
+        {"size": 0},
+        {"sort_by": "category"},
+        {"order": "ascending"},
+    ],
+)
+def test_get_products_rejects_invalid_pagination_and_sort_params(client, params):
+    response = client.get("/products", params=params)
+
+    assert response.status_code == 422
+
+
+def test_get_products_combines_filters_pagination_and_sorting(client):
+    client.post(
+        "/products",
+        json={
+            "name": "iPhone 15",
+            "category": "Mobile",
+            "price": 800,
+            "quantity": 2,
+        },
+    )
+    client.post(
+        "/products",
+        json={
+            "name": "iPhone 16",
+            "category": "Mobile",
+            "price": 900,
+            "quantity": 2,
+        },
+    )
+    client.post(
+        "/products",
+        json={
+            "name": "iPhone case",
+            "category": "Accessories",
+            "price": 20,
+            "quantity": 5,
+        },
+    )
+
+    response = client.get(
+        "/products",
+        params={
+            "name": "iphone",
+            "category": "mobile",
+            "page": 1,
+            "size": 1,
+            "sort_by": "price",
+            "order": "desc",
+        },
+    )
+
+    assert response.status_code == 200
+    assert [product["name"] for product in response.json()] == ["iPhone 16"]
 
 
 def test_get_product_by_id(client):

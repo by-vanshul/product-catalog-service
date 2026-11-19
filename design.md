@@ -120,9 +120,9 @@ DELETE /products/{id}
 
 ## Future Enhancements
 
-- Search Products
-- Pagination
-- Sorting
+- Search Products (Done)
+- Pagination (Done)
+- Sorting (Done)
 - JWT Authentication
-- Docker Support
-- GitHub Actions CI/CD
+- Docker Support (Done)
+- GitHub Actions CI/CD (Done)

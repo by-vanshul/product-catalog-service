@@ -27,6 +27,8 @@ The application uses a service layer between the API routes and the database. Th
 - Retrieve all products
 - Search products by name or category
 - Combine name and category filters
+- Paginate product listings
+- Sort products by name or price
 - Retrieve a product by UUID
 - Update one or more product fields
 - Delete a product
@@ -216,7 +218,9 @@ Run tests verbosely:
 pytest -v
 ```
 
-The test suite contains 18 passing tests.
+The test suite contains 28 passing tests.
+
+![Pytest output showing all 28 tests passing](docs/images/image-1.png)
 
 ## Test Coverage
 
@@ -226,13 +230,17 @@ Run the tests with a coverage report:
 pytest --cov=app --cov-report=term-missing
 ```
 
+![Terminal coverage report showing 86 percent overall coverage](docs/images/image-2.png)
+
 Generate an HTML coverage report:
 
 ```bash
 pytest --cov=app --cov-report=html
 ```
 
-The HTML report is created in the `htmlcov/` directory. The project is tested at approximately 85% coverage.
+![HTML coverage report showing 86 percent overall coverage](docs/images/image-3.png)
+
+The HTML report is created in the `htmlcov/` directory. The project currently has 86% test coverage.
 
 ## API Endpoints
 
@@ -323,6 +331,20 @@ curl "http://localhost:8000/products?name=wireless&category=accessories"
 
 The response is a `200 OK` list of products that match the filters. Omitting both parameters returns all products.
 
+### Pagination and Sorting
+
+Product listing supports pagination with `page` (default `1`) and `size` (default `10`). Pages start at 1, and size must be greater than 0. Sorting is optional: `sort_by` accepts `name` or `price`, and `order` accepts `asc` or `desc` (default `asc`). When no sort field is provided, results use a stable identifier order for consistent pagination.
+
+```http
+GET /products?page=1&size=10
+GET /products?page=2&size=5
+GET /products?sort_by=name&order=asc
+GET /products?sort_by=price&order=desc
+GET /products?name=iphone&category=mobile&page=1&size=10&sort_by=price&order=desc
+```
+
+Unsupported sort fields or directions, page values below 1, and sizes below 1 return `422 Unprocessable Entity`. The response remains a list of products; it does not include total-result metadata.
+
 ### Get a Product by ID
 
 ```http
@@ -377,7 +399,7 @@ The response contains the deleted product. A later request for the same product 
 
 ### Validation Errors
 
-Invalid input returns `422 Unprocessable Entity`. For example, negative prices and quantities are rejected, and `name` or `category` cannot be omitted or empty.
+Invalid input returns `422 Unprocessable Entity`. For example, negative prices and quantities are rejected, `name` or `category` cannot be omitted or empty, and invalid pagination or sorting parameters are rejected.
 
 ## CI/CD
 
@@ -398,6 +420,7 @@ The workflow is configured in `.github/workflows/ci.yml`.
 - UUID strings provide unique product identifiers.
 - Pydantic schemas validate incoming data and serialize API responses.
 - Product listing supports case-insensitive substring search by name and category, and combines both filters when provided.
+- SQLAlchemy applies listing filters, stable pagination, and allowlisted sorting by name or price.
 - Environment variables keep database configuration outside the source code.
 - SQLite is used during automated tests to keep tests isolated and faster.
 - Docker and Docker Compose separate the application and database into independent containers.
@@ -406,7 +429,6 @@ The workflow is configured in `.github/workflows/ci.yml`.
 ## Future Enhancements
 
 - Add authentication and role-based authorization
-- Add pagination and sorting to product listing
 - Add database migrations with Alembic
 - Add persistent Docker volumes for PostgreSQL
 - Add API and service unit tests for additional database error cases

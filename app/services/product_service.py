@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 from fastapi import HTTPException
 from sqlalchemy.exc import SQLAlchemyError
@@ -43,6 +44,10 @@ def get_products(
     db: Session,
     name: str | None = None,
     category: str | None = None,
+    page: int = 1,
+    size: int = 10,
+    sort_by: Literal["name", "price"] | None = None,
+    order: Literal["asc", "desc"] = "asc",
 ) -> list[Product]:
     try:
         query = db.query(Product)
@@ -50,7 +55,20 @@ def get_products(
             query = query.filter(Product.name.ilike(f"%{name}%"))
         if category is not None:
             query = query.filter(Product.category.ilike(f"%{category}%"))
-        products = query.all()
+
+        if sort_by is not None:
+            sort_column = {
+                "name": Product.name,
+                "price": Product.price,
+            }[sort_by]
+            sort_expression = (
+                sort_column.asc() if order == "asc" else sort_column.desc()
+            )
+            query = query.order_by(sort_expression, Product.id.asc())
+        else:
+            query = query.order_by(Product.id.asc())
+
+        products = query.offset((page - 1) * size).limit(size).all()
     except SQLAlchemyError as exc:
         db.rollback()
         logger.error("Failed to retrieve products: %s", exc)
@@ -59,7 +77,7 @@ def get_products(
             detail="Internal server error",
         ) from exc
 
-    logger.info("Retrieved all products. Count: %s", len(products))
+    logger.info("Retrieved products. Count: %s", len(products))
     return products
 
 
