@@ -1,111 +1,58 @@
-import uuid
-from typing import List
-from fastapi import APIRouter
-from fastapi import HTTPException
-from app.schemas.product import ProductCreate, ProductUpdate
-from datetime import datetime
-import logging
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
 
-logger = logging.getLogger(__name__)
+from app.database.dependencies import get_db
+from app.schemas.product import ProductCreate, ProductResponse, ProductUpdate
+from app.services import product_service
+
 
 router = APIRouter()
 
-products: List[dict] = []
+# The API layer handles HTTP concerns and delegates product operations to the service.
 
 
-@router.post("/products", status_code=201)
-def create_product(product: ProductCreate):
-    product_data = {
-        "id": str(uuid.uuid4()),
-        "created_at": datetime.utcnow().isoformat(),
-        **product.model_dump()
-    }
-    products.append(product_data)
-    logger.info(
-        f"Product created successfully. Product ID: {product_data['id']}"
-    )
-    return product_data
+@router.post("/products", status_code=201, response_model=ProductResponse)
+def create_product(product: ProductCreate, db: Session = Depends(get_db),):
+    return product_service.create_product(db, product)
 
 
-@router.get("/products")
-def get_products():
-
-    logger.info(
-        f"Retrieved all products. Count: {len(products)}"
-    )
-
-    return products
+@router.get("/products", response_model=list[ProductResponse])
+def get_products(db: Session = Depends(get_db)):
+    return product_service.get_products(db)
 
 
-@router.get("/products/{product_id}")
-def get_product(product_id: str):
-
-    for product in products:
-        if product["id"] == product_id:
-            logger.info(
-                f"Product retrieved. Product ID: {product_id}"
-            )
-            return product
-
-    logger.warning(
-        f"Product not found. Product ID: {product_id}"
-    )
-
-    raise HTTPException(
-        status_code=404,
-        detail="Product not found"
-    )
+@router.get("/products/{product_id}", response_model=ProductResponse)
+def get_product(product_id: str, db: Session = Depends(get_db)):
+    product = product_service.get_product_by_id(db, product_id)
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+    return product
 
 
-@router.put("/products/{product_id}")
-def update_product(product_id: str, updated_product: ProductUpdate):
-
-    for product in products:
-
-        if product["id"] == product_id:
-
-            update_data = updated_product.model_dump(
-                exclude_unset=True
-            )
-
-            product.update(update_data)
-
-            logger.info(
-                f"Product updated. Product ID: {product_id}"
-            )
-
-            return product
-
-    logger.warning(
-        f"Product not found. Product ID: {product_id}"
-    )
-
-    raise HTTPException(
-        status_code=404,
-        detail="Product not found"
-    )
+@router.put("/products/{product_id}", response_model=ProductResponse)
+def update_product(
+    product_id: str,
+    updated_product: ProductUpdate,
+    db: Session = Depends(get_db),
+):
+    product = product_service.update_product(db, product_id, updated_product)
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+    return product
 
 
-@router.delete("/products/{product_id}")
-def delete_product(product_id: str):
-
-    for index, product in enumerate(products):
-
-        if product["id"] == product_id:
-
-            deleted_product = products.pop(index)
-
-            logger.info(
-                f"Product deleted. Product ID: {product_id}"
-            )
-
-            return deleted_product
-
-    logger.warning(
-        f"Product not found. Product ID: {product_id}"
-    )
-
-    raise HTTPException(
-        status_code=404,
-        detail="Product not found"
-    )
+@router.delete("/products/{product_id}", response_model=ProductResponse)
+def delete_product(product_id: str, db: Session = Depends(get_db)):
+    product = product_service.delete_product(db, product_id)
+    if product is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found",
+        )
+    return product
