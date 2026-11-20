@@ -426,11 +426,4 @@ The workflow is configured in `.github/workflows/ci.yml`.
 - Docker and Docker Compose separate the application and database into independent containers.
 - FastAPI's built-in Swagger UI provides browsable API documentation.
 
-## Future Enhancements
 
-- Add authentication and role-based authorization
-- Add database migrations with Alembic
-- Add persistent Docker volumes for PostgreSQL
-- Add API and service unit tests for additional database error cases
-- Add structured application logging and monitoring
-- Add integration tests against a PostgreSQL test container
